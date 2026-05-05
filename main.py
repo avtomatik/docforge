@@ -6,35 +6,20 @@ Created on Mon Jun 12 21:43:23 2023
 @author: green-machine
 """
 
-from core.config import settings
-from core.db import fetch_data
-from core.funcs import (business_logic, create_work_from_config,
-                        extract_fields, load_config, transform_stringify,
-                        write_to_disk)
+from core.funcs import (create_work_from_config, extract_fields_from_domain,
+                        load_config, write_to_disk)
 from core.paths import BASE_DIR
+from core.repositories.placement_repo import get_placements
 from core.works import Work
 
 
 def main(work: Work) -> None:
-    df = fetch_data(settings, work.data_source, limit=work.num).pipe(
-        business_logic
-    )
-    df_formatted = df.copy().pipe(transform_stringify)
+    placements = get_placements(limit=work.num)
 
-    # =========================================================================
-    # Main Loop
-    # =========================================================================
-    for index, row in df_formatted.iterrows():
-        # =====================================================================
-        # Populate Fields' Map
-        # =====================================================================
-        fields = extract_fields(row)
-        map_fields = dict(row) | {"": ""}
+    for index, placement in enumerate(placements):
+        fields = extract_fields_from_domain(placement)
 
-        # =====================================================================
-        # Write to Disk
-        # =====================================================================
-        write_to_disk(work, fields, map_fields, index)
+        write_to_disk(work, fields, fields, index)
 
 
 if __name__ == "__main__":

@@ -1,16 +1,18 @@
-import pandas as pd
+from contextlib import contextmanager
+
 import psycopg2
 
-from core.config import Settings
-from core.enums import Data
+from core.config import settings
 
 
-def fetch_data(
-    settings: Settings, data_source: Data, limit: int = None
-) -> pd.DataFrame:
-    query = f"SELECT * FROM {data_source.table_name}"
-    if limit:
-        query += f" LIMIT {limit}"
-
-    with psycopg2.connect(settings.db_url) as conn:
-        return pd.read_sql(query, conn)
+@contextmanager
+def get_connection():
+    conn = psycopg2.connect(settings.db_url, connect_timeout=5)
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()

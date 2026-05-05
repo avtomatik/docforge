@@ -14,6 +14,7 @@ import pandas as pd
 import yaml
 from mailmerge import MailMerge
 
+from api.schemas.placements import Placement
 from core.config import settings
 from core.enums import Data, Template
 from core.paths import DATA_DIR
@@ -89,40 +90,6 @@ def generate_string_panel(file_path: Path, two_columned: bool = False) -> list:
     return panel
 
 
-def transform_stringify(df: pd.DataFrame) -> pd.DataFrame:
-    datetime_columns = df.select_dtypes(include="datetime64").columns
-    float_columns = df.select_dtypes(include="float64").columns
-    int_columns = df.select_dtypes(include="int64").columns
-
-    for column in datetime_columns:
-        df.loc[:, column] = df.loc[:, column].apply(
-            lambda _: f'{_:%d\xa0%B\xa0%Y}'
-        )
-
-    for column in float_columns:
-        # =====================================================================
-        # For Monetary Values
-        # =====================================================================
-        df.loc[:, column] = df.loc[:, column].apply(lambda _: f"{_:,.2f}")
-        # # ===================================================================
-        # # For Percentage Values
-        # # ===================================================================
-        # df.loc[:, column] = df.loc[:, column].apply(lambda _: f"{_:.4%}")
-
-    for column in int_columns:
-        # =====================================================================
-        # For Serial Numbers
-        # =====================================================================
-        df.loc[:, column] = df.loc[:, column].apply(lambda _: f"{_:04n}")
-
-    for column in ["ref"]:
-        df.loc[:, column] = df.loc[:, column].apply(
-            lambda _: f"{settings.PREFIX}{_}"
-        )
-
-    return df
-
-
 def write_to_disk(
     work: Work, fields: dict, map_fields: dict[str, str], index: int
 ) -> None:
@@ -181,14 +148,14 @@ def create_work_from_config(work_config):
     )
 
 
-def extract_fields(row):
+def extract_fields_from_domain(placement: Placement) -> dict:
     return {
-        "broker": row["broker"],
-        "umr": row["umr"],
-        "account_name": row["account_name"],
-        "document_number": row["document_number"],
-        "document_date": row["document_date"],
-        "inception_date": row["inception_date"],
-        "underwriter": row["underwriter"],
-        "net_amount": row["net_amount"],
+        "broker": placement.broker_id,
+        "umr": placement.umr,
+        "account_name": "TODO",
+        "document_number": "TODO",
+        "document_date": placement.document_date,
+        "inception_date": placement.inception_date,
+        "underwriter": "TODO",
+        "net_amount": 0.0,
     }
